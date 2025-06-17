@@ -1,14 +1,14 @@
 {
-  "name": "downloader-proxy",
+  "name": "yt-dlp-proxy",
   "version": "1.0.0",
-  "description": "A simple proxy server for the video downloader.",
+  "description": "A proxy server using yt-dlp for video downloading.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "axios": "^1.4.0",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "node-run-cmd": "^1.0.1" 
   }
 }
