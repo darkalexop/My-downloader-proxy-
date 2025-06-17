@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: lalit-proxy-123
+    env: node
+    plan: free
+    buildCommand: "npm install"
+    startCommand: "npm start"
+    buildpacks:
+      - url: https://github.com/heroku/heroku-buildpack-python
+      - url: https://github.com/heroku/heroku-buildpack-multi # Optional but good for multiple buildpacks
+      - url: https://github.com/yt-dlp/yt-dlp-heroku-buildpack
