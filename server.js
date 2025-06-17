@@ -1,6 +1,6 @@
 const express = require('express');
-const cors =require('cors');
-const { run } = require('node-run-cmd'); // yt-dlp chalane ke liye
+const cors = require('cors');
+const { run } = require('node-run-cmd');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -16,36 +16,37 @@ app.post('/download-info', async (req, res) => {
     }
 
     try {
-        // yt-dlp se video ki JSON information nikalna
-        // --dump-json: Sirf metadata dega, download nahi karega
-        // -f bestvideo+bestaudio/best: Best quality select karega
-        // --no-warnings: Warnings hide karega
-        const command = `yt-dlp --dump-json -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" --no-warnings "${videoUrl}"`;
+        // yt-dlp command ko aur reliable banaya gaya hai
+        const command = `yt-dlp \
+            --dump-json \
+            -f "bestvideo[ext=mp4][height<=?1080]+bestaudio[ext=m4a]/best[ext=mp4][height<=?1080]/best" \
+            --no-warnings \
+            --socket-timeout 30 \
+            --retries 3 \
+            --force-ipv4 \
+            "${videoUrl}"`;
         
-        const dataCallback = (data) => {
-            // console.log(data); // Debugging ke liye
-        };
-        const errorCallback = (error) => { // yt-dlp se error aane par
-            console.error('yt-dlp error:', error);
-            throw new Error('yt-dlp failed to process the video.');
-        };
-        const exitCallback = (exitCode) => {
-             // console.log(`yt-dlp exited with code ${exitCode}`); // Debugging
-        };
+        // console.log("Executing command:", command); // Debugging
 
-        // Command ko run karna aur output (stdout) lena
-        const stdout = await run(command, { onData: dataCallback, onError: errorCallback, onDone: exitCallback });
+        const stdout = await run(command);
         
-        if (stdout && stdout.length > 0) {
-            const videoInfo = JSON.parse(stdout[0]); // Assume pehla output JSON hai
-            res.json(videoInfo);
+        if (stdout && stdout.length > 0 && stdout[0].trim() !== '') {
+            try {
+                const videoInfo = JSON.parse(stdout[0]);
+                res.json(videoInfo);
+            } catch (parseError) {
+                console.error('JSON Parse Error:', parseError, 'Raw stdout:', stdout[0]);
+                throw new Error('Failed to parse video information from yt-dlp.');
+            }
         } else {
-            throw new Error('Could not get video information from yt-dlp.');
+            // Agar stdout khali hai, to specific error message dena
+            console.log('yt-dlp returned empty stdout for URL:', videoUrl);
+            throw new Error('yt-dlp did not return any information for this video. It might be unavailable or restricted.');
         }
 
     } catch (error) {
-        console.error('Server Error:', error.message);
-        res.status(500).json({ error: 'Failed to fetch video details. ' + error.message });
+        console.error('Server Error during yt-dlp execution:', error.message);
+        res.status(500).json({ error: 'Failed to process video. ' + error.message });
     }
 });
 
