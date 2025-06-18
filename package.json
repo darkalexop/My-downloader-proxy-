@@ -1,4 +1,3 @@
-```json
 {
   "name": "node-ytdlp-server",
   "version": "1.0.0",
@@ -13,5 +12,3 @@
     "youtube-dl-exec": "^2.5.4" 
   }
 }
-```
-*   **Kya Badla?** `node-run-cmd` hata kar `youtube-dl-exec` daal diya hai, aur start script ab simple `node server.js` hai.
