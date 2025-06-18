@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { run } = require('node-run-cmd');
+const youtubedl = require('youtube-dl-exec'); // NAYI LIBRARY
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -16,52 +16,36 @@ app.post('/download-info', async (req, res) => {
     }
 
     try {
-        const commandOptions = [
-            '--dump-json',
-            '-f', "bestvideo[ext=mp4][height<=?1080]+bestaudio[ext=m4a]/best[ext=mp4][height<=?1080]/best",
-            '--no-warnings',
-            '--socket-timeout', '30', // Increased timeout
-            '--retries', '3',         // Retry 3 times
-            '--force-ipv4',           // Use IPv4
-            '--no-check-certificate', // Skip SSL certificate verification (sometimes helps)
-            videoUrl                  // The URL must be the last argument
-        ];
+        // youtube-dl-exec se video ki JSON information nikalna
+        const output = await youtubedl(videoUrl, {
+            dumpJson: true,
+            noWarnings: true,
+            format: "bestvideo[ext=mp4][height<=?1080]+bestaudio[ext=m4a]/best[ext=mp4][height<=?1080]/best",
+            socketTimeout: 30,
+            retries: 3,
+            forceIpv4: true,
+            noCheckCertificate: true,
+            // Naya option: Agar yt-dlp na mile to error na de
+            noCallHome: true, 
+            // Naya option: ffmpeg ke path ke liye
+            ffmpegLocation: '/usr/bin/ffmpeg', // Default system path for ffmpeg if needed
+        });
         
-        // console.log("yt-dlp command:", "yt-dlp " + commandOptions.join(" ")); // For debugging
-
-        // node-run-cmd ko command aur arguments alag-alag pass karna hai
-        const stdout = await run('yt-dlp', commandOptions); 
-        
-        if (stdout && stdout.length > 0 && stdout[0].trim() !== '') {
-            try {
-                const videoInfo = JSON.parse(stdout[0]);
-                return res.json(videoInfo);
-            } catch (parseError) {
-                console.error('JSON Parse Error:', parseError.message);
-                console.error('Raw stdout from yt-dlp:', stdout[0]);
-                return res.status(500).json({ error: 'Failed to parse video information from yt-dlp. Output was not valid JSON.' });
-            }
+        // youtube-dl-exec seedha JavaScript object deta hai, JSON.parse ki zaroorat nahi
+        if (output) { 
+            res.json(output);
         } else {
-            console.warn('yt-dlp returned empty or no stdout for URL:', videoUrl);
-            return res.status(404).json({ error: 'yt-dlp did not return any information for this video. It might be unavailable, restricted, or the URL is incorrect.' });
+            throw new Error('Could not get video information.');
         }
 
     } catch (error) {
-        // Catch errors from run() or yt-dlp execution
-        console.error('Error during yt-dlp execution for URL:', videoUrl, error.message);
-         // yt-dlp stderr might be in error object if node-run-cmd provides it
-        let errorMessage = 'Failed to process video with yt-dlp. ';
-        if (error && error.stderr) { // node-run-cmd puts stderr in error object on failure
-            errorMessage += `Details: ${error.stderr.join(' ')}`;
-        } else if (error && error.message) {
-             errorMessage += error.message;
-        } else {
-            errorMessage += "Unknown error."
-        }
-        return res.status(500).json({ error: errorMessage });
+        console.error('Server Error:', videoUrl, error.message);
+        // Library aksar error.stderr mein detail deti hai
+        const details = error.stderr || error.message || "Unknown error from yt-dlp library.";
+        res.status(500).json({ error: 'Failed to fetch video details. ' + details });
     }
 });
 
 app.listen(PORT, () => {
-    console.log(`yt-dlp proxy server running on port ${PORT}. yt-dlp should have auto-updated if 'yt-dlp -U' was in start script.`);
+    console.log(`Node youtube-dl-exec server running on port ${PORT}`);
 });
