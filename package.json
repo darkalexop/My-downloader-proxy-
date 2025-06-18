@@ -1,14 +1,17 @@
+```json
 {
-  "name": "yt-dlp-ultimate-proxy",
-  "version": "1.1.0",
-  "description": "A robust proxy server using yt-dlp for video downloading with auto-update.",
+  "name": "node-ytdlp-server",
+  "version": "1.0.0",
+  "description": "Node.js server using youtube-dl-exec for video info.",
   "main": "server.js",
   "scripts": {
-    "start": "yt-dlp -U && node server.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5",
-    "node-run-cmd": "^1.0.1"
+    "youtube-dl-exec": "^2.5.4" 
   }
 }
+```
+*   **Kya Badla?** `node-run-cmd` hata kar `youtube-dl-exec` daal diya hai, aur start script ab simple `node server.js` hai.
